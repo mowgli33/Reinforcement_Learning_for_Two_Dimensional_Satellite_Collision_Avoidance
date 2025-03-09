@@ -26,15 +26,21 @@ class Satellite:
     def get_satellite_position(self):
         return (self.Sx, self.Sy)
 
+    def update_dynamics(self, dt, beta):
+        # Calculate the next vertical velocity
+        Vy_next = self.Vy + self.ut * dt
 
-    def update_velocity(self, dt):
+        # Calculate the Gaussian error term epsilon
+        variance = beta**2 * abs(self.Vy + Vy_next)**2
+        std_dev = np.sqrt(variance)
+        epsilon = np.random.normal(0, std_dev)
+
+        # Update the satellite's position
+        self.Sx += self.Vx * dt
+        self.Sy += (self.Vy + Vy_next) / 2 * dt + epsilon
+
+        # Update the satellite's velocity
         self.Vy += self.ut*dt
-        pass
-
-    def update_position(self, dt, epsilon):
-        self.Sx += self.Vx*dt
-        self.Sy += (2*self.Vy - self.ut*dt)/2 * dt + epsilon
-        pass
 
     def update_fuel(self, dt):
         self.f -= 0.1 * dt * abs(self.ut)
@@ -112,8 +118,7 @@ class SatelliteEnvironment :
         """Execute one time step within the environment."""
         # Update satellite and debris states
         self.satellite.ut = action  # Convert action to thrust level
-        self.satellite.update_velocity(self.delta_t)
-        self.satellite.update_position(self.delta_t, self.beta)
+        self.satellite.update_dynamics(self.delta_t, self.beta)
         self.satellite.update_fuel(self.delta_t)
         self.satellite.update_debris(self.delta_t)
         self.time_step += 1
@@ -145,10 +150,18 @@ class SatelliteEnvironment :
             return True, "Exceeded maximum orbit"
         if self.time_step >= self.max_time_steps:
             return True, "Reached maximum time steps"
+        # Check for collision with debris using collision probabilities
+        collision_probabilities = self.satellite.calculate_collision_probability()
+        collision_occurred = np.random.rand() < np.max(collision_probabilities)
+        if collision_occurred:
+            return True, "Collision with debris"
+        # If no termination condition is met
         return False, ""
+    
+
 
 # Define the action set
-action_set = [-5, -3, -1, 0, 1, 3, 5]
+action_set = [-5,-3,-1,0,1,3,5]
 
 # Example usage
 env = SatelliteEnvironment()
