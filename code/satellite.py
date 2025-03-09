@@ -1,4 +1,4 @@
-#class that describes the satelitte and its methods / attribute
+#class that describes the satelitte and its methods / attributes
 class Satellite():
     def __init__(self, Vx0, f0):
         #Position
