@@ -57,67 +57,83 @@ class Satellite:
 
 class Debris :
 
-    def __init__(self, satellite: Satellite, num_debris=4):
+    def __init__(self, id, satellite: Satellite, dt):
         # Debris initialization
-        self.num_debris = num_debris
-        self.satellite = satellite
-        self.debris_positions = self.initialize_debris()
-        self.debris_velocities = self.initialize_debris_velocities()
+        self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
+        self.Wx, self.Wy = self.initialize_debris_velocities(satellite, dt)
+        self.id = id
         
 
-    def initialize_debris(self):
-        """Initialize debris positions randomly within a specified region."""
-        return np.random.uniform(low=[1, -2], high=[5, 2], size=(self.num_debris, 2))
-
-    def initialize_debris_velocities(self):
+    def initialize_debris_velocities(self, satellite: Satellite, dt):
         """Initialize debris velocities based on random collision times."""
-        collision_times = np.random.uniform(5, 10, self.num_debris)
-        velocities = []
-        for t_n in collision_times:
-            Wx = (self.satellite.Sx + self.satellite.Vx * t_n - self.debris_positions[0][0]) / t_n
-            Wy = (self.satellite.Sy + self.satellite.Vy * t_n - self.debris_positions[0][1]) / t_n
-            velocities.append([Wx, Wy])
-        return np.array(velocities)
+        collision_times = np.random.randint(50, 100)*dt
+        Wx = (satellite.Sx + satellite.Vx * collision_times - self.Sx) / collision_times
+        Wy = (satellite.Sy + satellite.Vy * collision_times - self.Sy) / collision_times
+        return (Wx,Wy)
 
     def update_debris(self, dt):
         """Update debris positions based on their velocities."""
-        self.debris_positions += self.debris_velocities * dt
-
-    def get_debris_states(self):
-        """Return the current positions and velocities of all debris."""
-        return self.debris_positions, self.debris_velocities
+        self.Sx += self.Wx * dt
+        self.Sy += self.Wy * dt
 
 
     def get_state(self):
         """Return the complete state including satellite and debris information."""
-        debris_positions, debris_velocities = self.get_debris_states()
         return {
-            'debris_positions': debris_positions,
-            'debris_velocities': debris_velocities
+            'debris_positions': (self.Sx, self.Sy),
+            'debris_velocities': (self.Wx, self.Wy)
         }
+    
+class Set_debris :
+
+    def __init__(self,num_debris, satellite, delta_t):
+        self.num_debris = num_debris
+        self.delta_t = delta_t
+
+        set_debris = set()
+        id = 0
+        for n in range(self.num_debris) :
+            set_debris.add(Debris(id = id, satellite=satellite, dt = self.delta_t))
+            id+=1
+
+        self.set_debris = set_debris
+
+    def get_state(self):
+
+        Dict = {}
+        for d in self.set_debris :
+            Dict[d.id] = d.get_state()
+        return(Dict)
+    
+    def update_debris(self, delta_t):
+        for d in self.set_debris :
+            d.update_debris(delta_t)
+
+
+
 
 class Environment :
     def __init__(self, Vx0=0.5, f0=5, num_debris=4, max_orbit=2, beta=0.01, delta_t=0.1, max_time_steps=200):
         # Initialize the satellite
         self.satellite = Satellite(Vx0, f0)
-        self.debris = Debris(satellite=self.satellite, num_debris=num_debris)
+        self.num_debris = num_debris
         self.max_orbit = max_orbit
         self.beta = beta
         self.delta_t = delta_t
         self.max_time_steps = max_time_steps
         self.time_step = 0
-
+        self.Set_debris = Set_debris(self.num_debris, self.satellite, self.delta_t)
 
     def reset(self):
         """Reset the environment to its initial state."""
         self.satellite = Satellite(Vx0=0.5, f0=5)
-        self.debris = Debris(self.satellite, num_debris=4)
+        self.Set_debris = Set_debris(self.num_debris, self.satellite, self.delta_t)
         self.time_step = 0
         return self.get_state()
     
     def get_state(self):
         """Return the current state of the environment."""
-        state = {**self.satellite.get_state(), **self.debris.get_state()}
+        state = {**self.satellite.get_state(), **self.Set_debris.get_state()}
         state['time_step'] = self.time_step
         return state
     
@@ -127,7 +143,7 @@ class Environment :
         self.satellite.ut = action  # Convert action to thrust level
         self.satellite.update_dynamics(self.delta_t, self.beta)
         self.satellite.update_fuel(self.delta_t)
-        self.debris.update_debris(self.delta_t)
+        self.Set_debris.update_debris(self.delta_t)
         self.time_step += 1
 
         # Calculate reward
@@ -141,8 +157,11 @@ class Environment :
 
     def calculate_collision_probability(self):
         """Calculate the probability of collision with each debris cluster."""
-        distances = np.linalg.norm(self.debris.debris_positions - np.array([self.satellite.Sx, self.satellite.Sy]), axis=1)
-        probabilities = np.where(distances <= 0.1, 0.005, 0.005 * np.exp(-(np.log(1000) / 4.9) * (distances - 0.1)))
+        distances = []
+        for d in self.Set_debris.set_debris :
+            distances.append(np.linalg.norm(np.array([d.Sx, d.Sy]) - np.array([self.satellite.Sx, self.satellite.Sy])))
+        
+        probabilities = np.where(np.array(distances) <= 0.1, 0.005, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
         return probabilities
 
     def calculate_reward(self):
