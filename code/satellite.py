@@ -1,4 +1,5 @@
 import numpy as np
+import pygame
 
 
 #class that describes the satelitte and its methods / attributes
@@ -192,6 +193,26 @@ class Environment :
         return False, ""
     
 
+    def draw(self, screen, width, height):
+        # Clear screen
+        screen.fill(black)
+
+        # Draw satellite
+        sat_pos = self.satellite.get_satellite_position()
+        sat_x = int((sat_pos[0] / 20) * width)  # Scale to screen width
+        sat_y = int((1 - (sat_pos[1] + 2) / 4) * height)  # Scale to screen height
+        pygame.draw.circle(screen, blue, (sat_x, sat_y), 10)
+
+        # Draw debris
+        for debris in self.Set_debris.set_debris:
+            debris_pos = debris.get_state()['debris_positions']
+            debris_x = int((debris_pos[0] / 20) * width)  # Scale to screen width
+            debris_y = int((1 - (debris_pos[1] + 2) / 4) * height)  # Scale to screen height
+            pygame.draw.circle(screen, red, (debris_x, debris_y), 5)
+
+        # Update display
+        pygame.display.flip()
+
 
 # Define the action set
 action_set = [-5,-3,-1,0,1,3,5]
@@ -201,11 +222,48 @@ env = Environment()
 state = env.reset()
 done = False
 
+# while not done:
+#     # Select a random action from the action set
+#     action = np.random.choice(action_set)
+#     state, reward, (done,termination_status) = env.step(action)
+#     print(f"State: {state}, Reward: {reward}, Done: {done}, Termination_cause: {termination_status}")
+
+
+
+
+# Initialize Pygame
+pygame.init()
+
+# Set up display
+width, height = 800, 600
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Satellite Collision Avoidance")
+
+# Colors
+white = (255, 255, 255)
+black = (0, 0, 0)
+red = (255, 0, 0)
+blue = (0, 0, 255)
+
+
+# Main loop
+clock = pygame.time.Clock()
 while not done:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            done = True
+
     # Select a random action from the action set
     action = np.random.choice(action_set)
-    state, reward, (done,termination_status) = env.step(action)
-    print(f"State: {state}, Reward: {reward}, Done: {done}, Termination_cause: {termination_status}")
+    state, reward, (done, termination_status) = env.step(action)
 
+    # Draw the environment
+    env.draw(screen, width, height)
 
+    # Cap the frame rate
+    clock.tick(30)
 
+    # Print status
+    print(f"State: {state}, Reward: {reward}, Done: {done}, Termination Cause: {termination_status}")
+
+pygame.quit()
