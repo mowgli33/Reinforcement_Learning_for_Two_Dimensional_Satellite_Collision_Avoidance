@@ -60,14 +60,16 @@ class Debris :
 
     def __init__(self, id, satellite: Satellite, dt):
         # Debris initialization
-        self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
+        # self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
+        self.Sx, self.Sy = 5,2
         self.Wx, self.Wy = self.initialize_debris_velocities(satellite, dt)
         self.id = id
         
 
     def initialize_debris_velocities(self, satellite: Satellite, dt):
         """Initialize debris velocities based on random collision times."""
-        collision_times = np.random.randint(50, 100)*dt
+        # collision_times = np.random.randint(50, 100)*dt
+        collision_times = 70*dt
         Wx = (satellite.Sx + satellite.Vx * collision_times - self.Sx) / collision_times
         Wy = (satellite.Sy + satellite.Vy * collision_times - self.Sy) / collision_times
         return (Wx,Wy)
@@ -124,6 +126,7 @@ class Environment :
         self.max_time_steps = max_time_steps
         self.time_step = 0
         self.Set_debris = Set_debris(self.num_debris, self.satellite, self.delta_t)
+        self.action_space = [-1,0,1]
 
     def reset(self):
         """Reset the environment to its initial state."""
@@ -134,9 +137,11 @@ class Environment :
     
     def get_state(self):
         """Return the current state of the environment."""
-        state = {**self.satellite.get_state(), **self.Set_debris.get_state()}
+        state = self.satellite.get_state()
+        state['debris_state'] = self.Set_debris.get_state()
         state['time_step'] = self.time_step
         return state
+
     
     def step(self, action):
         """Execute one time step within the environment."""
@@ -151,27 +156,27 @@ class Environment :
         reward = self.calculate_reward()
 
         # Check for termination conditions
-        done = self.check_termination()
+        done, termination_condition = self.check_termination()
 
-        return self.get_state(), reward, done
+        return self.get_state(), reward, done, termination_condition
     
 
     def calculate_collision_probability(self):
         """Calculate the probability of collision with each debris cluster."""
         distances = []
         for d in self.Set_debris.set_debris :
-            distances.append(np.linalg.norm(np.array([d.Sx, d.Sy]) - np.array([self.satellite.Sx, self.satellite.Sy])))
-        
+            distances.append(np.linalg.norm(np.array([d.Sx, d.Sy]) - np.array([self.satellite.Sx, self.satellite.Sy])))    
         probabilities = np.where(np.array(distances) <= 0.1, 0.005, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
         return probabilities
 
     def calculate_reward(self):
         """Calculate the reward based on the current state."""
         Sx, Sy = self.satellite.get_satellite_position()
-        fuel_penalty = -0.1 * self.satellite.ut if self.satellite.ut != 0 else 0
-        deviation_penalty = -abs(Sy) / self.max_orbit
+        fuel_penalty = -0.1 * abs(self.satellite.ut) if self.satellite.ut != 0 else 0
+        deviation_penalty = -10*abs(Sy) / self.max_orbit
         collision_probabilities = self.calculate_collision_probability()
-        collision_penalty = -100*np.sum(collision_probabilities)
+        # collision_penalty = -100*np.sum(collision_probabilities)
+        collision_penalty = 0
 
         reward = 5 + fuel_penalty + deviation_penalty + collision_penalty
         return reward
@@ -194,6 +199,13 @@ class Environment :
     
 
     def draw(self, screen, width, height):
+
+        # Colors
+        white = (255, 255, 255)
+        black = (0, 0, 0)
+        red = (255, 0, 0)
+        blue = (0, 0, 255)
+
         # Clear screen
         screen.fill(black)
 
@@ -213,57 +225,39 @@ class Environment :
         # Update display
         pygame.display.flip()
 
+# # Example usage
+# env = Environment()
+# state = env.reset()
+# done = False
 
-# Define the action set
-action_set = [-5,-3,-1,0,1,3,5]
+# # Initialize Pygame
+# pygame.init()
 
-# Example usage
-env = Environment()
-state = env.reset()
-done = False
+# # Set up display
+# width, height = 800, 600
+# screen = pygame.display.set_mode((width, height))
+# pygame.display.set_caption("Satellite Collision Avoidance")
 
+
+
+# # Main loop
+# clock = pygame.time.Clock()
 # while not done:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             done = True
+
 #     # Select a random action from the action set
 #     action = np.random.choice(action_set)
-#     state, reward, (done,termination_status) = env.step(action)
-#     print(f"State: {state}, Reward: {reward}, Done: {done}, Termination_cause: {termination_status}")
+#     state, reward, (done, termination_status) = env.step(action)
 
+#     # Draw the environment
+#     env.draw(screen, width, height)
 
+#     # Cap the frame rate
+#     clock.tick(30)
 
+#     # Print status
+#     print(f"State: {state}, Reward: {reward}, Done: {done}, Termination Cause: {termination_status}")
 
-# Initialize Pygame
-pygame.init()
-
-# Set up display
-width, height = 800, 600
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Satellite Collision Avoidance")
-
-# Colors
-white = (255, 255, 255)
-black = (0, 0, 0)
-red = (255, 0, 0)
-blue = (0, 0, 255)
-
-
-# Main loop
-clock = pygame.time.Clock()
-while not done:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = True
-
-    # Select a random action from the action set
-    action = np.random.choice(action_set)
-    state, reward, (done, termination_status) = env.step(action)
-
-    # Draw the environment
-    env.draw(screen, width, height)
-
-    # Cap the frame rate
-    clock.tick(30)
-
-    # Print status
-    print(f"State: {state}, Reward: {reward}, Done: {done}, Termination Cause: {termination_status}")
-
-pygame.quit()
+# pygame.quit()
