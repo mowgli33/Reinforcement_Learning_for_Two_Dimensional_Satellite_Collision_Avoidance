@@ -29,7 +29,8 @@ class Satellite:
         # Calculate the Gaussian error term epsilon
         variance = beta**2 * abs(self.Vy + Vy_next)**2
         std_dev = np.sqrt(variance)
-        epsilon = np.random.normal(0, std_dev)
+        # epsilon = np.random.normal(0, std_dev)
+        epsilon = 0
 
         # Update the satellite's position
         self.Sx += self.Vx * dt
@@ -166,19 +167,18 @@ class Environment :
         distances = []
         for d in self.Set_debris.set_debris :
             distances.append(np.linalg.norm(np.array([d.Sx, d.Sy]) - np.array([self.satellite.Sx, self.satellite.Sy])))    
-        probabilities = np.where(np.array(distances) <= 0.1, 0.005, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
+        probabilities = np.where(np.array(distances) <= 0.1, 0.5, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
         return probabilities
 
     def calculate_reward(self):
         """Calculate the reward based on the current state."""
         Sx, Sy = self.satellite.get_satellite_position()
         fuel_penalty = -0.1 * abs(self.satellite.ut) if self.satellite.ut != 0 else 0
-        deviation_penalty = -10*abs(Sy) / self.max_orbit
+        deviation_penalty = -abs(Sy / self.max_orbit)
         collision_probabilities = self.calculate_collision_probability()
-        # collision_penalty = -100*np.sum(collision_probabilities)
-        collision_penalty = 0
+        collision_penalty = -1*np.sum(collision_probabilities)
 
-        reward = 5 + fuel_penalty + deviation_penalty + collision_penalty
+        reward = 0.1 + fuel_penalty + deviation_penalty + collision_penalty
         return reward
 
     def check_termination(self):
