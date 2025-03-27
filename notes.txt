@@ -1,0 +1,36 @@
+Réglage des reward :
+
+Uniquement fuel penalty :
+
+    Sans reward pour terminer :
+        +0.2 < +0.1 les deux sont très instables, très sensible à l'exploration
+        +1 en revanche bcp moins bien, car une fois qu'il a exploré le chemin devient meilleur nécessairement.
+
+        Le pb est que dès qu'il explore, il a un reward qui reste positif pourle pousser à aller plus loin, et il tombe dans un opti local
+
+        +0.05 : Beaucoup plus stable! dans ce cas, l'agent n'est encourager à explorer que si c'est mieux que ce qu'il a déjà!
+
+    Avec reward de termination :
+        cela déstabilise l'agent, car lui donne une mauvaise information si il termine dans une situation précaire.
+
+A RETENIR : dans cette situation, le facteur clé est que le reward doit être inférieur à la pénalité de fuel, pour encourager l'agent a explorer que lorsque c'est bénéfique!
+
+
+Ajout de la deviation penalty :
+
+    La pénalité en facteur 1 vient déstabiliser l'agent.
+    réduire le learning rate permet grandement de stabiliser l'agent!
+    Un learning rate de 0.1 donne de très bons résultats!
+
+    réaugmenter le reward au dessus de la pénalité de fuel réduit la qualité du résultat.
+
+    augmenter d'un facteur 10 la pénalité de déviation déstabilise encore plus l'agent.
+
+
+    Expérience : si on commence avec le satellite en y=1 :
+        avec learning rate = 0.1, fuel penalty = 0.1, deviation penalty = 1, reward = 0.05, l'agent ne bouge pas.
+        learning rate = 0.5 : l'agent bouge, mais est instable.
+
+        intuition : le learning rate fait voir +/- loin, et à learning rate très faible, l'agent ne voit pas l'intérêt de descendre vers y=0
+
+

@@ -86,7 +86,7 @@ def make_epsilon_greedy_policy(Q, epsilon, nA):
 
 
 
-def q_learning(env: Environment, num_episodes, bins, discount_factor=1.0, alpha=0.5, epsilon=1):
+def q_learning(env: Environment, num_episodes, bins, discount_factor=0.5, alpha=0.5, epsilon=1):
     """
     Q-Learning algorithm: Off-policy TD control. Finds the optimal greedy policy
     while following an epsilon-greedy policy
@@ -123,7 +123,6 @@ def q_learning(env: Environment, num_episodes, bins, discount_factor=1.0, alpha=
             sys.stdout.flush()
         
         # Implement this!
-        env = Environment()
         current_state = env.reset()
         current_observation = discretize_state(current_state, bins)
         episode_reward = 0
@@ -138,7 +137,7 @@ def q_learning(env: Environment, num_episodes, bins, discount_factor=1.0, alpha=
 
             action_index = np.random.choice(list(range(len(env.action_space))), p=policy(current_observation))
             action = env.action_space[action_index]
-            new_state, reward, done, _ = env.step(action)
+            new_state, reward, done, termination_condition = env.step(action)
             new_observation = discretize_state(new_state, bins)
 
             # print("action:", action, "discretized_state: ", current_observation, "value: ", Q[current_observation])
@@ -155,7 +154,9 @@ def q_learning(env: Environment, num_episodes, bins, discount_factor=1.0, alpha=
             
 
             if done:
-                stats.episode_rewards[i_episode] = episode_reward
+                termination_reward = (termination_condition=="Reached maximum time steps")*50 + (termination_condition=="Collision with debris")*-100 + (termination_condition=="Exceeded maximum orbit")*-0.1
+                # print(termination_reward)
+                stats.episode_rewards[i_episode] = episode_reward + termination_reward
                 stats.episode_lengths[i_episode] = num_iter + 1
                 break
     

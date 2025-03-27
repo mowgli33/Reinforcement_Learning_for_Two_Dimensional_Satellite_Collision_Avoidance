@@ -61,16 +61,14 @@ class Debris :
 
     def __init__(self, id, satellite: Satellite, dt):
         # Debris initialization
-        # self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
-        self.Sx, self.Sy = 5,2
+        self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
         self.Wx, self.Wy = self.initialize_debris_velocities(satellite, dt)
         self.id = id
         
 
     def initialize_debris_velocities(self, satellite: Satellite, dt):
         """Initialize debris velocities based on random collision times."""
-        # collision_times = np.random.randint(50, 100)*dt
-        collision_times = 70*dt
+        collision_times = np.random.randint(50, 100)*dt
         Wx = (satellite.Sx + satellite.Vx * collision_times - self.Sx) / collision_times
         Wy = (satellite.Sy + satellite.Vy * collision_times - self.Sy) / collision_times
         return (Wx,Wy)
@@ -167,18 +165,18 @@ class Environment :
         distances = []
         for d in self.Set_debris.set_debris :
             distances.append(np.linalg.norm(np.array([d.Sx, d.Sy]) - np.array([self.satellite.Sx, self.satellite.Sy])))    
-        probabilities = np.where(np.array(distances) <= 0.1, 0.5, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
+        probabilities = np.where(np.array(distances) <= 0.1, 0.005, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
         return probabilities
 
     def calculate_reward(self):
         """Calculate the reward based on the current state."""
         Sx, Sy = self.satellite.get_satellite_position()
         fuel_penalty = -0.1 * abs(self.satellite.ut) if self.satellite.ut != 0 else 0
-        deviation_penalty = -abs(Sy / self.max_orbit)
+        deviation_penalty = -2*abs(Sy / self.max_orbit)
         collision_probabilities = self.calculate_collision_probability()
-        collision_penalty = -1*np.sum(collision_probabilities)
+        collision_penalty = -100*np.sum(collision_probabilities)
 
-        reward = 0.1 + fuel_penalty + deviation_penalty + collision_penalty
+        reward = 0.05 + fuel_penalty + deviation_penalty + collision_penalty
         return reward
 
     def check_termination(self):
