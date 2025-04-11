@@ -154,9 +154,9 @@ def q_learning(env: Environment, num_episodes, bins, discount_factor=0.5, alpha=
             
 
             if done:
-                termination_reward = (termination_condition=="Reached maximum time steps")*50 + (termination_condition=="Collision with debris")*-100 + (termination_condition=="Exceeded maximum orbit")*-0.1
+                # termination_reward = (termination_condition=="Reached maximum time steps")*50 + (termination_condition=="Collision with debris")*-100 + (termination_condition=="Exceeded maximum orbit")*-0.1
                 # print(termination_reward)
-                stats.episode_rewards[i_episode] = episode_reward + termination_reward
+                stats.episode_rewards[i_episode] = episode_reward #+ termination_reward
                 stats.episode_lengths[i_episode] = num_iter + 1
                 break
     

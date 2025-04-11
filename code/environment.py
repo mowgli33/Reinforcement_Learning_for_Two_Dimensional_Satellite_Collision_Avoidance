@@ -1,7 +1,6 @@
 import numpy as np
 import pygame
 
-
 #class that describes the satelitte and its methods / attributes
 class Satellite:
     def __init__(self, Vx0, f0):
@@ -165,18 +164,18 @@ class Environment :
         distances = []
         for d in self.Set_debris.set_debris :
             distances.append(np.linalg.norm(np.array([d.Sx, d.Sy]) - np.array([self.satellite.Sx, self.satellite.Sy])))    
-        probabilities = np.where(np.array(distances) <= 0.1, 0.005, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
+        probabilities = np.where(np.array(distances) <= 0.1, 0.5, 0.005 * np.exp(-(np.log(1000) / 4.9) * (np.array(distances) - 0.1)))
         return probabilities
 
     def calculate_reward(self):
         """Calculate the reward based on the current state."""
         Sx, Sy = self.satellite.get_satellite_position()
         fuel_penalty = -0.1 * abs(self.satellite.ut) if self.satellite.ut != 0 else 0
-        deviation_penalty = -2*abs(Sy / self.max_orbit)
+        deviation_penalty = -abs(Sy / self.max_orbit)
         collision_probabilities = self.calculate_collision_probability()
-        collision_penalty = -100*np.sum(collision_probabilities)
+        collision_penalty = -1*np.sum(collision_probabilities)
 
-        reward = 0.05 + fuel_penalty + deviation_penalty + collision_penalty
+        reward = 0.1 + fuel_penalty + deviation_penalty + collision_penalty
         return reward
 
     def check_termination(self):
