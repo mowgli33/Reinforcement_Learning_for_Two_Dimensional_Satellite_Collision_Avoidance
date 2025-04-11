@@ -1,6 +1,7 @@
 import numpy as np
 import pygame
 
+
 #class that describes the satelitte and its methods / attributes
 class Satellite:
     def __init__(self, Vx0, f0):
@@ -60,14 +61,16 @@ class Debris :
 
     def __init__(self, id, satellite: Satellite, dt):
         # Debris initialization
-        self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
+        # self.Sx, self.Sy = np.random.uniform(low=[1, -2], high=[5, 2])
+        self.Sx, self.Sy = 5,2
         self.Wx, self.Wy = self.initialize_debris_velocities(satellite, dt)
         self.id = id
         
 
     def initialize_debris_velocities(self, satellite: Satellite, dt):
         """Initialize debris velocities based on random collision times."""
-        collision_times = np.random.randint(50, 100)*dt
+        # collision_times = np.random.randint(50, 100)*dt
+        collision_times = 70*dt
         Wx = (satellite.Sx + satellite.Vx * collision_times - self.Sx) / collision_times
         Wy = (satellite.Sy + satellite.Vy * collision_times - self.Sy) / collision_times
         return (Wx,Wy)
